@@ -215,6 +215,7 @@ install_and_backup .gitignoreglobal
 install_and_backup .config/nvim/init.vim
 install_and_backup .vimrc
 install_and_backup .vim/ftplugin
+install_and_backup .vim/colors
 
 # Only install plugins if not in server mode (desktop mode)
 if [ -z "$DOTFILES_SERVER" ] || [ "$DOTFILES_SERVER" = "false" ]
