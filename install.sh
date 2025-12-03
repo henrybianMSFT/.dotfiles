@@ -127,8 +127,8 @@ fi
 
 ## Using system package manager
 prompt "Installing Dependencies..."
-deb_packages="coreutils zsh vim tmux git curl dnsutils wget python3 python fonts-powerline ctags python-pip python3-pip"
-rpm_packages="coreutils zsh vim tmux git curl dnsutils wget python3 python powerline-fonts ctags"
+deb_packages="coreutils zsh vim tmux git curl dnsutils wget python3 fonts-powerline python3-pip"
+rpm_packages="coreutils zsh vim tmux git curl dnsutils wget python3 powerline-fonts python3-pip"
 homebrew_packages="iterm2 homebrew/cask-fonts/font-meslo-for-powerline coreutils zsh vim neovim tmux wget python3"
 
 if command -v sudo > /dev/null
@@ -199,6 +199,7 @@ export PATH="$PATH:$HOME/.local/bin"
 nvim +PlugInstall +qall || die "Failed to install vim plugins"
 nvim +PlugInstall +UpdateRemotePlugins +qall
 
+# ctags config (optional - install 'ctags' package separately if you want to use it)
 install_and_backup .ctags
 
 install_and_backup .tmux.conf
