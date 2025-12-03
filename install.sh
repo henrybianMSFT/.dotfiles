@@ -79,10 +79,15 @@ function question {
 function install_and_backup {
   src=$1
   dest=$2
-  [ -e "$src" ] || die "No $src found in $BASEDIR"
+  
+  # Check if source file exists in BASEDIR
+  src_path="$BASEDIR/$src"
+  [ -e "$src_path" ] || die "No $src found in $BASEDIR"
+  
   [ -z "$dest" ] && dest="$HOME/$src"
 
-  src=$(realpath $1)
+  # Resolve absolute path of source
+  src_abs=$(realpath "$src_path")
   mkdir -p "$(dirname "$dest")"
 
   if [ -e "$dest" ]
@@ -91,8 +96,8 @@ function install_and_backup {
     prompt "Existing $dest backed up to $dest.pre.install"
   fi
 
-  ln -s "$src" "$dest" || die "Failed to create symlink"
-  prompt "Created symlink $dest -> $src"
+  ln -s "$src_abs" "$dest" || die "Failed to create symlink"
+  prompt "Created symlink $dest -> $src_abs"
 }
 
 
