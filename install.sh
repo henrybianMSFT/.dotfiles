@@ -243,39 +243,43 @@ if [ "$is_server" = "false" ]
 then
   prompt "Installing vim-plug plugin manager"
   
-  # Install vim-plug for neovim
-  if command -v nvim > /dev/null
-  then
+  # Install vim-plug for neovim (if present)
+  if command -v nvim > /dev/null; then
     nvim_plug_dir="$HOME/.local/share/nvim/site/autoload"
     mkdir -p "$nvim_plug_dir"
     curl -fsSLo "$nvim_plug_dir/plug.vim" \
       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim || \
       prompt "Warning: Failed to install vim-plug for neovim"
-    
-    # Also install for regular vim if it exists
-    if command -v vim > /dev/null
-    then
-      vim_plug_dir="$HOME/.vim/autoload"
-      mkdir -p "$vim_plug_dir"
-      curl -fsSLo "$vim_plug_dir/plug.vim" \
-        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim || \
-        prompt "Warning: Failed to install vim-plug for vim"
-    fi
-    
-    prompt "Installing vim plugins (this may take a while)..."
-    source ~/.zshrc.local 2>/dev/null || true
-    export PATH="$PATH:$HOME/.local/bin"
-    
-    # Try to install plugins, but don't fail if it doesn't work
-    if nvim +PlugInstall +qall 2>/dev/null
-    then
+  fi
+
+  # Always install vim-plug for classic vim to avoid Plug errors
+  vim_plug_dir="$HOME/.vim/autoload"
+  mkdir -p "$vim_plug_dir"
+  curl -fsSLo "$vim_plug_dir/plug.vim" \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim || \
+    prompt "Warning: Failed to install vim-plug for vim"
+
+  # Install plugins via available editor
+  prompt "Installing vim plugins (this may take a while)..."
+  source ~/.zshrc.local 2>/dev/null || true
+  export PATH="$PATH:$HOME/.local/bin"
+
+  if command -v nvim > /dev/null; then
+    if nvim +PlugInstall +qall 2>/dev/null; then
       nvim +PlugUpdate +qall 2>/dev/null || true
+      prompt "Neovim plugins installed successfully"
+    else
+      prompt "Warning: Failed to install neovim plugins. You can retry with: nvim +PlugInstall"
+    fi
+  elif command -v vim > /dev/null; then
+    if vim +PlugInstall +qall 2>/dev/null; then
+      vim +PlugUpdate +qall 2>/dev/null || true
       prompt "Vim plugins installed successfully"
     else
-      prompt "Warning: Failed to install vim plugins. You can install them manually later with: nvim +PlugInstall"
+      prompt "Warning: Failed to install vim plugins. You can retry with: vim +PlugInstall"
     fi
   else
-    prompt "Warning: neovim not found, skipping plugin installation"
+    prompt "Warning: Neither vim nor neovim found; plugin installation skipped"
   fi
 else
   prompt "Skipping vim plugin installation (server mode)"
@@ -305,3 +309,48 @@ printf "  1. ${Cyan}~/.gitconfig${NC} - Update your name and email\n"
 printf "  2. ${Cyan}~/.ssh/config${NC} - Add your SSH hosts\n"
 printf "  3. ${Cyan}~/.zshrc.local${NC} - Add machine-specific settings\n"
 printf "\nSee the README.md for more details.\n\n"
+
+# 4. Quality-of-life tweaks
+# Silence zsh bell
+if ! grep -q "NO_BEEP" "$HOME/.zshrc.local" 2>/dev/null; then
+  echo "setopt NO_BEEP" >> "$HOME/.zshrc.local"
+  prompt "Disabled zsh audible bell"
+fi
+
+# Optional: WSL git speed hack
+is_wsl=false
+if grep -qi "microsoft" /proc/version 2>/dev/null; then
+  is_wsl=true
+fi
+
+if [ "$is_wsl" = "true" ]; then
+  if question "WSL detected. Apply git speed wrapper to ~/.profile?"; then
+    profile_file="$HOME/.profile"
+    mkdir -p "$HOME"
+    touch "$profile_file"
+    if ! grep -q "function isWinDir" "$profile_file"; then
+      cat >> "$profile_file" <<'WSL_GIT_WRAPPER'
+# WSL: choose Windows git in /mnt paths
+function isWinDir {
+  case $PWD/ in
+    /mnt/*) return $(true);;
+    *) return $(false);;
+  esac
+}
+function git {
+  if isWinDir
+  then
+    git.exe "$@"
+  else
+    /usr/bin/git "$@"
+  fi
+}
+WSL_GIT_WRAPPER
+      prompt "Added WSL git wrapper to ~/.profile"
+    else
+      prompt "WSL git wrapper already present in ~/.profile, skipping"
+    fi
+  else
+    prompt "Skipped applying WSL git wrapper per user choice"
+  fi
+fi

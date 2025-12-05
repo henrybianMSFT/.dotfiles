@@ -2,6 +2,7 @@
 *.local
 .zshrc.local
 .vimrc.local
+.gitconfig
 
 # Backup files created by install script
 *.pre.install
@@ -14,14 +15,12 @@
 *.swo
 *~
 
-# SSH private keys (NEVER commit these)
+# SSH private keys and config (NEVER commit sensitive SSH files)
 .ssh/id_*
 .ssh/*.pem
 !.ssh/*.pub
-# But allow SSH config files
-!.ssh/config
-!.ssh/config.example
-!.ssh/authorized_keys
+.ssh/config
+.ssh/authorized_keys
 
 # GPG keys
 *.gpg
