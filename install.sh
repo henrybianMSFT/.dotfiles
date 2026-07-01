@@ -76,44 +76,45 @@ function question {
 }
 
 # Install $1 to location $2, backup if $2 exists already
+# $3 = optional ("true" to skip when source missing; default false)
 function install_and_backup {
-  src=$1
-  dest=$2
-  
-  # Check if source file exists in BASEDIR
-  src_path="$BASEDIR/$src"
-  [ -e "$src_path" ] || die "No $src found in $BASEDIR"
-  
-  [ -z "$dest" ] && dest="$HOME/$src"
+  local src="$1"
+  local dest="${2:-$HOME/$src}"
+  local optional="${3:-false}"
 
-  # Resolve absolute path of source
-  src_abs=$(realpath "$src_path")
+  local src_path="$BASEDIR/$src"
+
+  if [ ! -e "$src_path" ]; then
+    if [ "$optional" = "true" ]; then
+      prompt "Optional file missing, skipping: $src"
+      return 0
+    fi
+    die "Required file missing: $src (expected at $src_path)"
+  fi
+
+  local src_abs
+  src_abs="$(realpath "$src_path")"
   mkdir -p "$(dirname "$dest")"
 
-  if [ -e "$dest" ]
-  then
-    # Check if it's already a symlink to our dotfiles (reinstall case)
-    if [ -L "$dest" ] && [ "$(readlink "$dest")" = "$src_abs" ]
-    then
+  if [ -e "$dest" ]; then
+    if [ -L "$dest" ] && [ "$(readlink "$dest")" = "$src_abs" ]; then
       prompt "Symlink $dest already points to dotfiles, skipping"
       return 0
     fi
-    
-    # Find a unique backup name (avoid overwriting existing backups)
-    backup_base="$dest.pre.install"
-    backup_name="$backup_base"
-    counter=1
-    while [ -e "$backup_name" ]
-    do
+
+    local backup_base="$dest.pre.install"
+    local backup_name="$backup_base"
+    local counter=1
+    while [ -e "$backup_name" ]; do
       backup_name="${backup_base}.${counter}"
       counter=$((counter + 1))
     done
-    
+
     mv "$dest" "$backup_name"
     prompt "Existing $dest backed up to $backup_name"
   fi
 
-  ln -s "$src_abs" "$dest" || die "Failed to create symlink"
+  ln -s "$src_abs" "$dest" || die "Failed to create symlink: $dest"
   prompt "Created symlink $dest -> $src_abs"
 }
 
